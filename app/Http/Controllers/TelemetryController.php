@@ -170,6 +170,7 @@ class TelemetryController extends Controller
                 'device_id'   => $log->device_id,
                 'created_at'  => $log->created_at->format('Y-m-d H:i:s'),
                 'time'        => $log->created_at->format('H:i:s'),
+                'date'        => $log->created_at->translatedFormat('d M Y'),
             ],
         ], 201);
     }
@@ -263,6 +264,7 @@ class TelemetryController extends Controller
                 'humidity'    => $item->humidity    !== null ? (float) $item->humidity    : null,
                 'device_id'   => $item->device_id,
                 'time'        => $item->created_at->format('H:i:s'),
+                'date'        => $item->created_at->translatedFormat('d M Y'),
                 'timestamp'   => $item->created_at->format('Y-m-d H:i:s'),
             ];
         });

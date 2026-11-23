@@ -345,6 +345,7 @@
                     <table class="w-full text-left text-xs">
                         <thead class="bg-slate-50 text-slate-500 uppercase border-y border-slate-200 font-semibold text-[10px]">
                             <tr>
+                                <th class="py-2.5 px-3">Tanggal</th>
                                 <th class="py-2.5 px-3">Waktu</th>
                                 <th class="py-2.5 px-3">Radiasi (CPM)</th>
                                 <th class="py-2.5 px-3">Dosis (µSv/h)</th>
@@ -355,7 +356,7 @@
                         </thead>
                         <tbody id="telemetry-table-body" class="divide-y divide-slate-100 text-slate-700 font-mono">
                             <tr>
-                                <td colspan="6" class="py-8 text-center text-slate-400 font-sans text-xs">
+                                <td colspan="7" class="py-8 text-center text-slate-400 font-sans text-xs">
                                     <i class="fa-solid fa-inbox text-slate-300 text-2xl block mb-2"></i>
                                     Belum ada data dari ESP32. Hubungkan alat untuk mulai menerima data...
                                 </td>
@@ -611,6 +612,8 @@
             const cpmVal = parseInt(item.cpm || item.raw || 0);
             const radVal = Number(item.radiation || (cpmVal / 153.8)).toFixed(3);
             const statusUpper = (item.status || 'AMAN').toUpperCase();
+            const dateVal = item.date || (item.timestamp ? item.timestamp.split(' ')[0] : '-');
+            const timeVal = item.time || (item.timestamp ? item.timestamp.split(' ')[1] : '-');
 
             let badgeHtml = '';
             if (statusUpper === 'AMAN') {
@@ -624,12 +627,13 @@
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-slate-50 transition-colors';
             tr.innerHTML = `
-                <td class="py-2.5 px-3 font-semibold text-slate-900">${item.time}</td>
-                <td class="py-2.5 px-3 font-bold ${statusUpper === 'BERBAHAYA' ? 'text-rose-600' : statusUpper === 'WASPADA' || statusUpper === 'SEDANG' ? 'text-amber-600' : 'text-emerald-600'}">${cpmVal} CPM</td>
-                <td class="py-2.5 px-3 font-mono text-slate-600">${radVal} µSv/h</td>
-                <td class="py-2.5 px-3">${badgeHtml}</td>
-                <td class="py-2.5 px-3 text-slate-700">${item.temperature !== null && item.temperature !== undefined ? Number(item.temperature).toFixed(1) + '°C' : '-'}</td>
-                <td class="py-2.5 px-3 text-slate-700">${item.humidity !== null && item.humidity !== undefined ? Number(item.humidity).toFixed(1) + '%' : '-'}</td>
+                <td class="py-2.5 px-3 text-slate-600 font-medium whitespace-nowrap">${dateVal}</td>
+                <td class="py-2.5 px-3 font-semibold text-slate-900 whitespace-nowrap">${timeVal}</td>
+                <td class="py-2.5 px-3 font-bold ${statusUpper === 'BERBAHAYA' ? 'text-rose-600' : statusUpper === 'WASPADA' || statusUpper === 'SEDANG' ? 'text-amber-600' : 'text-emerald-600'} whitespace-nowrap">${cpmVal} CPM</td>
+                <td class="py-2.5 px-3 font-mono text-slate-600 whitespace-nowrap">${radVal} µSv/h</td>
+                <td class="py-2.5 px-3 whitespace-nowrap">${badgeHtml}</td>
+                <td class="py-2.5 px-3 text-slate-700 whitespace-nowrap">${item.temperature !== null && item.temperature !== undefined ? Number(item.temperature).toFixed(1) + '°C' : '-'}</td>
+                <td class="py-2.5 px-3 text-slate-700 whitespace-nowrap">${item.humidity !== null && item.humidity !== undefined ? Number(item.humidity).toFixed(1) + '%' : '-'}</td>
             `;
 
             tbody.insertBefore(tr, tbody.firstChild);
@@ -791,7 +795,7 @@
                 const tbody = document.getElementById('telemetry-table-body');
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="6" class="py-8 text-center text-slate-400 font-sans text-xs">
+                        <td colspan="7" class="py-8 text-center text-slate-400 font-sans text-xs">
                             <i class="fa-solid fa-inbox text-slate-300 text-2xl block mb-2"></i>
                             Belum ada data dari ESP32. Hubungkan alat untuk mulai menerima data...
                         </td>
@@ -819,11 +823,13 @@
                 return;
             }
 
-            let csv = 'Timestamp,Radiasi (CPM),Dosis (uSv/h),Status,Suhu (C),Kelembapan (%)\r\n';
+            let csv = 'Tanggal,Waktu,Radiasi (CPM),Dosis (uSv/h),Status,Suhu (C),Kelembapan (%)\r\n';
             state.historyRecords.forEach(r => {
                 const cpmVal = r.cpm || r.raw || 0;
                 const radVal = Number(r.radiation || (cpmVal / 153.8)).toFixed(3);
-                csv += `"${r.timestamp ?? r.time}","${cpmVal}","${radVal}","${r.status}","${r.temperature ?? ''}","${r.humidity ?? ''}"\r\n`;
+                const dateVal = r.date || (r.timestamp ? r.timestamp.split(' ')[0] : '');
+                const timeVal = r.time || (r.timestamp ? r.timestamp.split(' ')[1] : '');
+                csv += `"${dateVal}","${timeVal}","${cpmVal}","${radVal}","${r.status}","${r.temperature ?? ''}","${r.humidity ?? ''}"\r\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
