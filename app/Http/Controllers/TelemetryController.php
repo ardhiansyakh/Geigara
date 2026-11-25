@@ -157,6 +157,9 @@ class TelemetryController extends Controller
             'device_id'   => $deviceId,
         ]);
 
+        // Simpan waktu heartbeat ESP32 terakhir (Unix Epoch)
+        @file_put_contents(storage_path('framework/esp32_heartbeat.txt'), time());
+
         return response()->json([
             'status'  => 'success',
             'message' => 'Data monitoring radiasi dari ESP32 berhasil disimpan ke database.',
@@ -206,9 +209,22 @@ class TelemetryController extends Controller
             ]);
         }
 
-        // ESP32 kirim setiap 30 detik → online jika < 90 detik yang lalu
-        $diffSeconds = (int) abs($now->diffInSeconds($log->created_at));
-        $isOnline    = $diffSeconds <= 90;
+        // Cek status online via heartbeat file dan timestamp database (bebas isu selisih timezone)
+        $currentTime   = time();
+        $heartbeatFile = storage_path('framework/esp32_heartbeat.txt');
+
+        if (file_exists($heartbeatFile)) {
+            $lastHeartbeat = (int) @file_get_contents($heartbeatFile);
+            $diffSeconds   = max(0, $currentTime - $lastHeartbeat);
+        } elseif ($log && $log->created_at) {
+            $diffSeconds   = (int) abs($currentTime - $log->created_at->timestamp);
+        } else {
+            $diffSeconds   = 999999;
+        }
+
+        // ESP32 dianggap online HANYA jika ada kiriman data baru dalam 10 detik terakhir.
+        // Begitu ESP32 dicabut/mati, dalam hitungan detik (maks 10 dtk) dashboard langsung otomatis berubah OFFLINE!
+        $isOnline = $diffSeconds <= 10;
 
         $cpm       = (int)   ($log->cpm       ?? $log->raw ?? 0);
         $radiation = (float) ($log->radiation ?? round($cpm / 153.8, 3));
